@@ -1,14 +1,17 @@
+# GameMonkey Linter: https://github.com/eddietree/gm-lint
+
 import sublime, sublime_plugin
-import subprocess, os
-import re
+import subprocess, os, re
 
 class GmLintCommand(sublime_plugin.TextCommand):
 
 	def run(self, edit):
 
-		# erase previous regions
+		# erase previous status and regions
+		self.view.erase_status("gm-lint")   	
 		self.view.erase_regions("compile_error_regions")
 
+		# find the fullpath of the gm byte code exe
 		plugin_fullpath = os.path.realpath(__file__)
 		plugin_dir = os.path.dirname(plugin_fullpath)
 		gm_exe_path = plugin_dir + "\GmByteCodeGen.exe"
@@ -20,7 +23,7 @@ class GmLintCommand(sublime_plugin.TextCommand):
 		exe_string =  "\"" + gm_exe_path + "\" -i " + "\"" + script_filename + "\""
 		foo = subprocess.Popen(exe_string, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
-		# wait for return code
+		# wait for compile to finish and listen to emitted return code
 		foo.wait()
 		return_code = foo.returncode
 
@@ -32,18 +35,21 @@ class GmLintCommand(sublime_plugin.TextCommand):
 
 			output_bytes = foo.stdout.read()
 			output_string = output_bytes.decode("utf-8")
+			#print( "output: " + output_string)
 
 			# grab the line number and error
-			pattern = re.compile('.*ERROR:[ \t]*Compile error[ \t]*\(([0-9]*)\)(.*)\r?\n')
+			pattern = re.compile('.*Compile error[ \t]*\(([0-9]*)\)(.*)\r?\n')
 			match = pattern.match( output_string )
 			line_number = int(match.group(1))
 			compile_error_msg = match.group(2)
-
-			#print( "output: " + output_string)
+			
 			#print( "LINE: " + str(line_number))
 			#print( "ERROR: " + compile_error_msg)
 
-			print ("[GM-Lint] Compile error: Line " + str(line_number) + ": " + compile_error_msg)
+			# set the status
+			output_msg = "Compile error: Line " + str(line_number) + ": " + compile_error_msg
+			print ( "[gm-lint] " + output_msg)
+			self.view.set_status("gm-lint", output_msg)
 
 			# grabs region that has the compile error
 			line_pt = self.view.text_point(line_number-1, 0)
@@ -66,8 +72,12 @@ class GmLintCommand(sublime_plugin.TextCommand):
 class ListenSaveGameMonkeyFile(sublime_plugin.EventListener):
     def on_post_save(self, view):
 
+    	# what operating system?
+    	os_platform = sublime.platform()
+
+    	# get file extension of the file we just saved
     	extension = os.path.splitext(view.file_name())[1] 
 
-    	# run only on gamemonkey files   	
-    	if extension == ".gm" :
+    	# run only on .gm files and on windows
+    	if extension == ".gm" and os_platform == "windows" :
     		view.run_command("gm_lint")
