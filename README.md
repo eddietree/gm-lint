@@ -1,4 +1,5 @@
-gm-lint
+GameMonkey Lint
 =======
 
-GameMonkey Lint plugin for Sublime Text 3
+[GameMonkey](http://gmscript.com) Lint plugin for Sublime Text 3
+Works only on PC
