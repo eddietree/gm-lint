@@ -47,8 +47,8 @@ class GmLintCommand(sublime_plugin.TextCommand):
 			#print( "ERROR: " + compile_error_msg)
 
 			# set the status
-			output_msg = "Compile error: Line " + str(line_number) + ": " + compile_error_msg
-			print ( "[gm-lint] " + output_msg)
+			output_msg = "[gm-lint] Compile error: Line " + str(line_number) + " - " + compile_error_msg
+			print ( output_msg )
 			self.view.set_status("gm-lint", output_msg)
 
 			# grabs region that has the compile error
@@ -66,7 +66,9 @@ class GmLintCommand(sublime_plugin.TextCommand):
 			self.view.show(line_pt)
 		
 		else:
-			print ("[GM-Lint] Successfully compiled '" + script_filename + "'!")
+
+			print ("[gm-lint] Successfully compiled '" + script_filename + "'!")
+			self.view.set_status("gm-lint", "[gm-lint] Compiled success")
 
   
 class ListenSaveGameMonkeyFile(sublime_plugin.EventListener):
