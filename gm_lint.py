@@ -46,7 +46,7 @@ class LintCommandBase(sublime_plugin.TextCommand):
 		if ( line_number == None ):
 			success_msg = self.command_name + ": Compiled success!"
 			print (success_msg)
-			self.view.set_status("gm-lint", success_msg)
+			self.view.set_status(self.command_name, success_msg)
 
 		else:
 			self.handle_compile_fail( line_number, compile_error_msg )
