@@ -1,10 +1,9 @@
 # GameMonkey Linter: https://github.com/eddietree/gm-lint
-
+import subprocess, os, re, sys
 import sublime, sublime_plugin
-import subprocess, os, re
 
-class GmLintCommand(sublime_plugin.TextCommand):
 
+class LintCommandBase(sublime_plugin.TextCommand):
 	def highlight_line(self, line_number):
 
 		# grabs region that has the compile error
@@ -22,22 +21,43 @@ class GmLintCommand(sublime_plugin.TextCommand):
 		self.view.show(line_pt)
 
 	def reset(self):
-
 		# erase previous status and regions
-		self.view.erase_status("gm-lint")   	
+		self.view.erase_status(self.command_name)   	
 		self.view.erase_regions("compile_error_regions")
 
 	def handle_compile_fail(self, line_number, compile_error_msg):
 
-		output_msg = "[gm-lint] Compile error: Line " + str(line_number) + " - " + compile_error_msg
+		output_msg = self.command_name + ": Compile error: Line " + str(line_number) + " - " + compile_error_msg
 		print ( output_msg )
 
-		self.view.set_status("gm-lint", output_msg)
+		self.view.set_status(self.command_name, output_msg)
 		self.highlight_line(line_number)
+
+	# overwrite this function!
+	def get_line_and_error_msg(self, edit):
+		return None
 
 	def run(self, edit):
 
 		self.reset()
+
+		line_number, compile_error_msg = self.get_line_and_error_msg(edit)
+
+		if ( line_number == None ):
+			success_msg = self.command_name + ": Compiled success!"
+			print (success_msg)
+			self.view.set_status("gm-lint", success_msg)
+
+		else:
+			self.handle_compile_fail( line_number, compile_error_msg )
+
+
+########################## GAMEMONKEY 
+class GmLintCommand(LintCommandBase):
+
+	command_name = "gm_lint"
+
+	def get_line_and_error_msg(self, edit):
 
 		# find the fullpath of the gm byte code exe
 		plugin_fullpath = os.path.realpath(__file__)
@@ -68,12 +88,11 @@ class GmLintCommand(sublime_plugin.TextCommand):
 			line_number = int(match.group(1))
 			compile_error_msg = match.group(2)
 
-			self.handle_compile_fail( line_number, compile_error_msg )			
+			return line_number, compile_error_msg	
 
 		else: # success
 
-			print ("[gm-lint] Successfully compiled '" + script_filename + "'!")
-			self.view.set_status("gm-lint", "[gm-lint] Compiled success")
+			return None, None
 
 
 class ListenSaveGameMonkeyFile(sublime_plugin.EventListener):
